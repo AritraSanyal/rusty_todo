@@ -12,12 +12,12 @@ where
         terminal.draw(|f| ui::render(f, &app))?;
 
         if let Event::Key(key) = event::read()? {
-            if key.kind == crossterm::event::KeyEventKind::Press {
-                if let KeyCode::Char('q') = key.code {
-                    return Ok(());
-                }
-
-                app.move_focus(key.code);
+            match key.code {
+                KeyCode::Char('q') => return Ok(()),
+                KeyCode::Char('l') | KeyCode::Char('h') => app.move_focus(key.code),
+                KeyCode::Char('j') => app.next_item(),
+                KeyCode::Char('k') => app.previous_item(),
+                _ => {}
             }
         }
     }
