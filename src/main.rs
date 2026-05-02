@@ -1,11 +1,12 @@
+mod app;
 mod run_app;
 mod ui;
 
 use crossterm::{
     execute,
-    terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
+    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use ratatui::{Terminal, backend::CrosstermBackend};
+use ratatui::{backend::CrosstermBackend, Terminal};
 use std::io;
 
 fn main() -> io::Result<()> {
