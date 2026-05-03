@@ -1,11 +1,52 @@
-use crate::app::{ActiveBlock, App};
+use crate::app::{ActiveBlock, App, InputMode};
 use ratatui::{
     layout::{Alignment, Constraint, Layout, Rect},
-    style::Style,
-    widgets::{Block, BorderType, Borders, List, ListItem, Paragraph},
+    style::{Color, Style},
+    text::Line,
+    widgets::{Block, BorderType, Borders, Clear, List, ListItem, Paragraph},
     Frame,
 };
 
+// --- helper function to create centered rect for popup
+fn center_rect(percentage_x: u16, percentage_y: u16, rect: Rect) -> Rect {
+    let popup_layout = Layout::vertical([
+        Constraint::Percentage((100 - percentage_y) / 2), // Top Margin
+        Constraint::Percentage(percentage_y),             // Popup height
+        Constraint::Percentage((100 - percentage_y) / 2), // Bottom Margin
+    ])
+    .split(rect);
+    Layout::horizontal([
+        Constraint::Percentage((100 - percentage_x) / 2), // Left Margin
+        Constraint::Percentage(percentage_x),             // Popup Width
+        Constraint::Percentage((100 - percentage_x) / 2), // Right Margin
+    ])
+    .split(popup_layout[1])[1]
+}
+
+// --- function to render add task popup ---
+fn render_add_task_popup(frame: &mut Frame, app: &App) {
+    // Create centered box
+    let area = center_rect(60, 10, frame.area());
+
+    // clear background
+    frame.render_widget(Clear, area);
+
+    // build input box
+    let input_block = Block::default()
+        .title_top("[Add Tasks]")
+        .title_bottom(Line::from(" ↵ to save, <esc> to cancel").right_aligned())
+        .borders(Borders::ALL)
+        .border_type(BorderType::Rounded);
+
+    // render the text
+    let input_text = Paragraph::new(app.input.as_str()).block(input_block);
+    frame.render_widget(input_text, area);
+
+    // move terminal cursor
+    frame.set_cursor_position((area.x + app.input.len() as u16 + 1, area.y + 1));
+}
+
+// --- function to render todo ---
 fn render_todo(frame: &mut Frame, area: Rect, app: &App) {
     let is_active = app.is_active(ActiveBlock::Todo);
 
@@ -18,11 +59,12 @@ fn render_todo(frame: &mut Frame, area: Rect, app: &App) {
     let list = List::new(items)
         .block(
             Block::default()
-                .title("[TODOS]")
+                .title_top("[TODOS]")
+                .title_bottom(Line::from(format!("{}", app.todos.len())).right_aligned())
                 .borders(Borders::ALL)
                 .border_type(BorderType::Rounded)
                 .border_style(if is_active {
-                    Style::new().yellow().bold().italic()
+                    Style::new().bold().italic()
                 } else {
                     Style::new().dark_gray()
                 }),
@@ -32,6 +74,7 @@ fn render_todo(frame: &mut Frame, area: Rect, app: &App) {
     frame.render_stateful_widget(list, area, &mut app.todo_state.clone());
 }
 
+// --- funtion to render doing section ---
 fn render_doing(frame: &mut Frame, area: Rect, app: &App) {
     let is_active = app.is_active(ActiveBlock::Doing);
 
@@ -45,19 +88,21 @@ fn render_doing(frame: &mut Frame, area: Rect, app: &App) {
         .block(
             Block::default()
                 .title("[DOING]")
+                .title_bottom(Line::from(format!("{}", app.doing.len())).right_aligned())
                 .borders(Borders::ALL)
                 .border_type(BorderType::Rounded)
                 .border_style(if is_active {
-                    Style::new().yellow().bold().italic()
+                    Style::new().bold().italic()
                 } else {
                     Style::new().dark_gray()
                 }),
         )
         .highlight_symbol(">> ")
-        .highlight_style(Style::new().bold().cyan());
+        .highlight_style(Style::new().bold().yellow());
     frame.render_stateful_widget(list, area, &mut app.doing_state.clone());
 }
 
+// --- function to render done section ---
 fn render_done(frame: &mut Frame, area: Rect, app: &App) {
     let is_active = app.is_active(ActiveBlock::Done);
 
@@ -67,19 +112,21 @@ fn render_done(frame: &mut Frame, area: Rect, app: &App) {
         .block(
             Block::default()
                 .title("[DONE]")
+                .title_bottom(Line::from(format!("{}", app.done.len())).right_aligned())
                 .borders(Borders::ALL)
                 .border_type(BorderType::Rounded)
                 .border_style(if is_active {
-                    Style::new().yellow().bold().italic()
+                    Style::new().bold().italic()
                 } else {
                     Style::new().dark_gray()
                 }),
         )
         .highlight_symbol(">> ")
-        .highlight_style(Style::new().bold().cyan());
+        .highlight_style(Style::new().bold().green());
     frame.render_stateful_widget(list, area, &mut app.done_state.clone());
 }
 
+// --- render wide layout (todo|doing|done) ---
 fn render_wide_layout(frame: &mut Frame, app: &App, area: Rect) {
     let chunks = Layout::horizontal([
         Constraint::Percentage(33),
@@ -94,6 +141,7 @@ fn render_wide_layout(frame: &mut Frame, app: &App, area: Rect) {
     render_done(frame, chunks[2], app);
 }
 
+// --- render middle layout (todo| (doing//done)) ---
 fn render_middle_layout(frame: &mut Frame, app: &App, area: Rect) {
     // split the area into main chunk and right chunk
     let main_chunks =
@@ -109,6 +157,7 @@ fn render_middle_layout(frame: &mut Frame, app: &App, area: Rect) {
     render_done(frame, right_chunk[1], app);
 }
 
+// --- render narrow layout (todo // doing // done) ---
 fn render_narrow_layout(frame: &mut Frame, app: &App, area: Rect) {
     // We use a match to determine which block gets the "Fill"
     let constraints = match app.active_block {
@@ -164,4 +213,8 @@ pub fn render(frame: &mut Frame, app: &App) {
         render_narrow_layout(frame, app, main_area);
     }
     render_footer(frame, footer_area);
+
+    if app.input_mode == InputMode::Insert {
+        render_add_task_popup(frame, app);
+    }
 }

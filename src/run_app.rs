@@ -1,4 +1,7 @@
-use crate::{app::App, ui};
+use crate::{
+    app::{App, InputMode},
+    ui,
+};
 use crossterm::event::{self, Event, KeyCode};
 use ratatui::{backend::Backend, Terminal};
 
@@ -12,12 +15,33 @@ where
         terminal.draw(|f| ui::render(f, &app))?;
 
         if let Event::Key(key) = event::read()? {
-            match key.code {
-                KeyCode::Char('q') => return Ok(()),
-                KeyCode::Char('l') | KeyCode::Char('h') => app.move_focus(key.code),
-                KeyCode::Char('j') => app.next_item(),
-                KeyCode::Char('k') => app.previous_item(),
-                _ => {}
+            match app.input_mode {
+                InputMode::Normal => match key.code {
+                    KeyCode::Char('q') => return Ok(()),
+                    KeyCode::Char('a') => {
+                        app.input_mode = InputMode::Insert;
+                    }
+                    KeyCode::Char('l') | KeyCode::Char('h') => app.move_focus(key.code),
+                    KeyCode::Char('j') => app.next_item(),
+                    KeyCode::Char('k') => app.previous_item(),
+                    _ => {}
+                },
+                InputMode::Insert => match key.code {
+                    KeyCode::Enter => {
+                        app.submit_task();
+                    }
+                    KeyCode::Esc => {
+                        app.input.clear();
+                        app.input_mode = InputMode::Normal;
+                    }
+                    KeyCode::Char(ch) => {
+                        app.input.push(ch);
+                    }
+                    KeyCode::Backspace => {
+                        app.input.pop();
+                    }
+                    _ => {}
+                },
             }
         }
     }

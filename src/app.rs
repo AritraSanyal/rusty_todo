@@ -9,6 +9,12 @@ pub enum ActiveBlock {
 }
 
 #[derive(Debug, PartialEq)]
+pub enum InputMode {
+    Normal,
+    Insert,
+}
+
+#[derive(Debug, PartialEq)]
 pub struct App {
     // --- Active Block ---
     pub active_block: ActiveBlock,
@@ -20,6 +26,10 @@ pub struct App {
     pub todo_state: ListState,
     pub doing_state: ListState,
     pub done_state: ListState,
+    //--- Taking Input ---
+    pub input: String,
+    //--- Input Mode -- between navigating and Input ---
+    pub input_mode: InputMode,
 }
 
 impl App {
@@ -28,6 +38,8 @@ impl App {
         todo_state.select(Some(0));
         Self {
             active_block: ActiveBlock::Todo,
+            input: String::new(),
+            input_mode: InputMode::Normal,
             todos: vec![
                 "Setup Life".to_string(),
                 "Typping...".to_string(),
@@ -44,6 +56,16 @@ impl App {
         }
     }
 
+    // --- Helper function to submit task ---
+    pub fn submit_task(&mut self) {
+        if !self.input.trim().is_empty() {
+            self.todos.push(self.input.trim().to_string());
+        }
+        self.input.clear();
+        self.input_mode = InputMode::Normal;
+    }
+
+    // --- Helper Funtion to check which block is active ---
     pub fn is_active(&self, block: ActiveBlock) -> bool {
         self.active_block == block
     }
@@ -72,7 +94,7 @@ impl App {
             _ => {}
         }
     }
-
+    // --- Helper Funtion for moving to next item on the list
     pub fn next_item(&mut self) {
         let (state, items) = match self.active_block {
             ActiveBlock::Todo => (&mut self.todo_state, &self.todos),
@@ -93,6 +115,7 @@ impl App {
         state.select(Some(i));
     }
 
+    // --- Helper function for moveing to previous item on the list ---
     pub fn previous_item(&mut self) {
         let (state, items) = match self.active_block {
             ActiveBlock::Todo => (&mut self.todo_state, &self.todos),
