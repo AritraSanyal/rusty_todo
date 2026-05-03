@@ -67,9 +67,68 @@ impl App {
 
     // --- Helper Funtion to check which block is active ---
     pub fn is_active(&self, block: ActiveBlock) -> bool {
-        self.active_block == block
+        self.active_block == block && self.input_mode == InputMode::Normal
     }
 
+    // --- Helper funciton to move task to next section ---
+    pub fn move_task_forward(&mut self) {
+        match self.active_block {
+            ActiveBlock::Todo => {
+                if let Some(i) = self.todo_state.selected() {
+                    if !self.todos.is_empty() {
+                        //remove form todo and push to doing
+                        let task = self.todos.remove(i);
+                        self.doing.push(task);
+                    }
+
+                    if self.todos.is_empty() {
+                        self.todo_state.select(Some(0));
+                    } else if i >= self.todos.len() {
+                        self.todo_state.select(Some(self.todos.len() - 1));
+                    }
+                }
+            }
+            ActiveBlock::Doing => {
+                if let Some(i) = self.doing_state.selected() {
+                    if !self.doing.is_empty() {
+                        //remove form todo and push to doing
+                        let task = self.doing.remove(i);
+                        self.done.push(task);
+                    }
+
+                    if self.doing.is_empty() {
+                        self.doing_state.select(Some(0));
+                    } else if i >= self.doing.len() {
+                        self.doing_state.select(Some(self.doing.len() - 1));
+                    }
+                }
+            }
+            ActiveBlock::Done => {}
+        }
+    }
+
+    // --- helper function to move tasks to previous section --
+    pub fn move_task_backwords(&mut self) {
+        match self.active_block {
+            ActiveBlock::Todo => {}
+            ActiveBlock::Doing => {
+                if let Some(i) = self.doing_state.selected() {
+                    if !self.doing.is_empty() {
+                        //remove form todo and push to doing
+                        let task = self.doing.remove(i);
+                        self.todos.push(task);
+                    }
+
+                    if self.doing.is_empty() {
+                        self.doing_state.select(Some(0));
+                    } else if i >= self.doing.len() {
+                        self.doing_state.select(Some(self.doing.len() - 1));
+                    }
+                }
+            }
+            ActiveBlock::Done => {}
+        }
+    }
     pub fn move_focus(&mut self, key: KeyCode) {
         match (self.active_block, key) {
             // --- MOVING RIGHT or LEFT ---
@@ -92,6 +151,23 @@ impl App {
                 self.active_block = ActiveBlock::Doing;
             }
             _ => {}
+        }
+        match self.active_block {
+            ActiveBlock::Todo => {
+                if !self.todos.is_empty() {
+                    self.todo_state.select(Some(0));
+                }
+            }
+            ActiveBlock::Doing => {
+                if !self.doing.is_empty() {
+                    self.doing_state.select(Some(0));
+                }
+            }
+            ActiveBlock::Done => {
+                if !self.done.is_empty() {
+                    self.done_state.select(Some(0));
+                }
+            }
         }
     }
     // --- Helper Funtion for moving to next item on the list

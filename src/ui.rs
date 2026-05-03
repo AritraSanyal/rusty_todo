@@ -1,7 +1,7 @@
 use crate::app::{ActiveBlock, App, InputMode};
 use ratatui::{
     layout::{Alignment, Constraint, Layout, Rect},
-    style::{Color, Style},
+    style::Style,
     text::Line,
     widgets::{Block, BorderType, Borders, Clear, List, ListItem, Paragraph},
     Frame,
@@ -34,9 +34,10 @@ fn render_add_task_popup(frame: &mut Frame, app: &App) {
     // build input box
     let input_block = Block::default()
         .title_top("[Add Tasks]")
-        .title_bottom(Line::from(" ↵ to save, <esc> to cancel").right_aligned())
+        .title_bottom(Line::from(" <a-enter> to save, <esc> to cancel").right_aligned())
         .borders(Borders::ALL)
-        .border_type(BorderType::Rounded);
+        .border_type(BorderType::Rounded)
+        .border_style(Style::default().bold().cyan());
 
     // render the text
     let input_text = Paragraph::new(app.input.as_str()).block(input_block);
@@ -53,7 +54,7 @@ fn render_todo(frame: &mut Frame, area: Rect, app: &App) {
     let items: Vec<ListItem> = app
         .todos
         .iter()
-        .map(|i| ListItem::new(i.as_str()))
+        .map(|i| ListItem::new(format!("[  ] {}", i)))
         .collect();
 
     let list = List::new(items)
@@ -69,8 +70,12 @@ fn render_todo(frame: &mut Frame, area: Rect, app: &App) {
                     Style::new().dark_gray()
                 }),
         )
-        .highlight_symbol(">> ")
-        .highlight_style(Style::new().bold().cyan());
+        .highlight_symbol(if is_active { " - " } else { "" })
+        .highlight_style(if is_active {
+            Style::new().bold().cyan()
+        } else {
+            Style::new()
+        });
     frame.render_stateful_widget(list, area, &mut app.todo_state.clone());
 }
 
@@ -81,7 +86,7 @@ fn render_doing(frame: &mut Frame, area: Rect, app: &App) {
     let items: Vec<ListItem> = app
         .doing
         .iter()
-        .map(|i| ListItem::new(i.as_str()))
+        .map(|i| ListItem::new(format!("[!] {}", i)))
         .collect();
 
     let list = List::new(items)
@@ -97,8 +102,12 @@ fn render_doing(frame: &mut Frame, area: Rect, app: &App) {
                     Style::new().dark_gray()
                 }),
         )
-        .highlight_symbol(">> ")
-        .highlight_style(Style::new().bold().yellow());
+        .highlight_symbol(if is_active { " - " } else { "" })
+        .highlight_style(if is_active {
+            Style::new().bold().yellow()
+        } else {
+            Style::new()
+        });
     frame.render_stateful_widget(list, area, &mut app.doing_state.clone());
 }
 
@@ -106,7 +115,11 @@ fn render_doing(frame: &mut Frame, area: Rect, app: &App) {
 fn render_done(frame: &mut Frame, area: Rect, app: &App) {
     let is_active = app.is_active(ActiveBlock::Done);
 
-    let items: Vec<ListItem> = app.done.iter().map(|i| ListItem::new(i.as_str())).collect();
+    let items: Vec<ListItem> = app
+        .done
+        .iter()
+        .map(|i| ListItem::new(format!("[x] {}", i)))
+        .collect();
 
     let list = List::new(items)
         .block(
@@ -121,8 +134,12 @@ fn render_done(frame: &mut Frame, area: Rect, app: &App) {
                     Style::new().dark_gray()
                 }),
         )
-        .highlight_symbol(">> ")
-        .highlight_style(Style::new().bold().green());
+        .highlight_symbol(if is_active { " - " } else { "" })
+        .highlight_style(if is_active {
+            Style::new().bold().green()
+        } else {
+            Style::new()
+        });
     frame.render_stateful_widget(list, area, &mut app.done_state.clone());
 }
 

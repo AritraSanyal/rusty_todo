@@ -2,7 +2,7 @@ use crate::{
     app::{App, InputMode},
     ui,
 };
-use crossterm::event::{self, Event, KeyCode};
+use crossterm::event::{self, Event, KeyCode, KeyModifiers};
 use ratatui::{backend::Backend, Terminal};
 
 pub fn run<B: Backend>(terminal: &mut Terminal<B>) -> Result<(), Box<dyn std::error::Error>>
@@ -22,12 +22,14 @@ where
                         app.input_mode = InputMode::Insert;
                     }
                     KeyCode::Char('l') | KeyCode::Char('h') => app.move_focus(key.code),
+                    KeyCode::Char('>') => app.move_task_forward(),
+                    KeyCode::Char('<') => app.move_task_backwords(),
                     KeyCode::Char('j') => app.next_item(),
                     KeyCode::Char('k') => app.previous_item(),
                     _ => {}
                 },
                 InputMode::Insert => match key.code {
-                    KeyCode::Enter => {
+                    KeyCode::Enter if key.modifiers.contains(KeyModifiers::ALT) => {
                         app.submit_task();
                     }
                     KeyCode::Esc => {
